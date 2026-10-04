@@ -45,3 +45,13 @@ func dialWebsocket(ctx context.Context, cfg ClientConfig) (Frames, error) {
 	conn.SetReadLimit(cfg.ReadLimit)
 	return NewWebsocketFrames(conn), nil
 }
+
+// closeWebsocket closes a page's WebSocket with 1000, normal closure.
+// CloseNow would send 1001, and WebSocket.close throws on any code but 1000
+// and 3000–4999: under TinyGo that throw is a panic that kills the program.
+// Close waits for the close handshake, so it runs on its own goroutine rather
+// than hold up the session's teardown.
+func closeWebsocket(conn *websocket.Conn) error {
+	go conn.Close(websocket.StatusNormalClosure, "") //nolint:errcheck // best effort on the way out
+	return nil
+}
